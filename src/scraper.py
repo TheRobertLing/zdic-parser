@@ -1,4 +1,6 @@
 import httpx
+from .utils import get_sections
+from bs4 import BeautifulSoup
 
 
 class ZDicParser:
@@ -6,10 +8,10 @@ class ZDicParser:
     BASE_URL = "https://www.zdic.net/han{mode}/{character}"
 
     def __init__(self, html: str):
-        self.html = html
+        self.sections = get_sections(BeautifulSoup(html, "lxml"))
 
     @classmethod
-    def create(cls, character: str, mode: str = "s", timeout: int = 5):
+    def search(cls, character: str, mode: str = "s", timeout: int = 5):
         """ Static constructor for synchronous requests """
         if mode not in ("s", "t"):
             raise ValueError("mode must be either 's' (Simplified Chinese) or 't' (Traditional Chinese).")
