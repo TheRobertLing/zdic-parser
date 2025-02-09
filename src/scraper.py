@@ -1,14 +1,17 @@
+import bs4
 import httpx
 from .utils import get_sections
 from bs4 import BeautifulSoup
 
 
 class ZDicParser:
-    """ ZDic Chinese Character Data Parser """
+    """
+    ZDic Chinese Character Data Parser
+    """
     BASE_URL = "https://www.zdic.net/han{mode}/{character}"
 
     def __init__(self, html: str):
-        self.sections = get_sections(BeautifulSoup(html, "lxml"))
+        self.sections: dict[str, bs4.element.Tag | None] = get_sections(BeautifulSoup(html, "lxml"))
 
     @classmethod
     def search(cls, character: str, mode: str = "s", timeout: int = 5):
@@ -33,13 +36,71 @@ class ZDicParser:
 
         return None
 
-    """ Actions """
+    """ 
+    Actions:
+    """
 
-    def get_pinyin(self):
-        pass
+    def get_img_src(self) -> str | None:
+        # Check if the section for the image exists
+        if not self.sections['info_card']:
+            return None
 
-    def get_zhuyin(self):
-        pass
+        td: bs4.element.Tag | None = self.sections['info_card'].find("td", {"class": "ziif_d_l"})
+        if not td:
+            return None
+
+        # Check if the image exists
+        img: bs4.element.Tag | None = td.find('img')
+        if not img or not img.has_attr("src"):
+            return None
+
+        return img["src"]
+
+    def get_pinyin(self) -> list[str] | None:
+        # Check if the section for pinyin exists
+        if not self.sections['info_card']:
+            return None
+
+        table: bs4.element.Tag | None = self.sections['info_card'].find("table", {"border": "0"})
+        if not table:
+            return None
+
+        # Check if the pinyin exists
+        tds: list[bs4.element.Tag] = table.find_all("td", {"class": "z_py"})
+        if len(tds) == 2:
+            td = tds[1]
+        else:
+            return None
+
+        # Get all pinyin paragraphs
+        ps: list[bs4.element.Tag] = td.find_all('p')
+        if not ps:
+            return None
+
+        return [p.text.strip() for p in ps]
+
+    def get_zhuyin(self) -> list[str] | None:
+        # Check if the section for zhuyin exists
+        if not self.sections['info_card']:
+            return None
+
+        table: bs4.element.Tag | None = self.sections['info_card'].find("table", {"border": "0"})
+        if not table:
+            return None
+
+        # Check if the pinyin exists
+        tds: list[bs4.element.Tag] = table.find_all("td", {"class": "z_py"})
+        if len(tds) == 2:
+            td = tds[1]
+        else:
+            return None
+
+        # Get all pinyin paragraphs
+        ps: list[bs4.element.Tag] = td.find_all('p')
+        if not ps:
+            return None
+
+        return [p.text.strip() for p in ps]
 
     def get_radical(self):
         pass
