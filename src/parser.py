@@ -3,7 +3,7 @@ import logging
 import bs4
 from bs4 import BeautifulSoup
 
-from .types import CharacterInfo, Definitions, RelatedCharacters, ParsedSections
+from .types import CharacterInfo, Definitions, ParsedSections
 from .exceptions import ElementIsMissingException
 
 # Key map
@@ -96,6 +96,7 @@ def parse_character_info_section(info_card: bs4.element.Tag | None) -> Character
                     # Special case for multiple title-value pairs inside <p> elements
                     for p in value_td.find_all("p", recursive=False):
                         span: bs4.element.Tag | None = p.find("span")
+                        span_title: str
                         if span:
                             span_title = span.get_text(strip=True)
                             span.extract()
@@ -119,6 +120,63 @@ def parse_character_info_section(info_card: bs4.element.Tag | None) -> Character
 
 
 def parse_definitions_section(definitions_card: bs4.element.Tag) -> Definitions:
-    parsed_info: Definitions = {}
-    return {}
+    if definitions_card is None:
+        raise ElementIsMissingException()
 
+    parsed_info: Definitions = {"simple_defs": {}}
+
+    # Get simple definitions
+    simple_defs: bs4.element.Tag | None = definitions_card.select_one("div.content.definitions.jnr")
+    if simple_defs:
+        # Extract Chinese definitions
+        dicpy_list = simple_defs.select("p > span.dicpy")
+        if dicpy_list:
+            # Necessary filter for certain edge cases
+            filtered_dicpy: list[bs4.element.Tag] = [span for span in dicpy_list if span.find("span", {"class": "ptr"})]
+
+            for dicpy in filtered_dicpy:
+                key: str = dicpy.get_text(separator=", ", strip=True)
+
+                key_parent: bs4.element.Tag | None = dicpy.find_parent("p")
+                if key_parent:
+                    def_list: bs4.element.Tag | None = key_parent.find_next_sibling("ol")
+                    if def_list:
+                        # Case 1: Definitions use <ol> with <li> e.g. most properly formatted pages
+                        li_defs = [li.text.strip() for li in def_list.find_all("li")]
+
+                        # Case 2: Definitions use <ol> with <p>
+                        p_tag = def_list.find("p")
+                        if p_tag:
+                            li_defs.append(p_tag.text.strip("◎ \u3000"))
+
+                        # Check key doesn't exist already, otherwise append definitions
+                        if key not in parsed_info["simple_defs"]:
+                            parsed_info["simple_defs"][key] = []
+
+                        parsed_info["simple_defs"][key].extend(li_defs)
+                    else:
+                        # Case 3: Definitions use <p> instead of <ol>
+                        p_tag: bs4.element.Tag | None = key_parent.find_next_sibling("p")
+                        if p_tag and not (p_tag.find("strong") and "其它字义" in p_tag.find("strong").text):
+                            if key not in parsed_info["simple_defs"]:
+                                parsed_info["simple_defs"][key] = []
+
+                            parsed_info["simple_defs"][key].append(p_tag.text.strip("◎ \u3000"))
+
+        # Extract non-Chinese definitions
+        other_defs: bs4.element.Tag | None = simple_defs.find("div", {"class": "enbox"})
+        if other_defs:
+            for p in other_defs.find_all("p", recursive=False):
+                span: bs4.element.Tag | None = p.find("span")
+                span_title: str = span.get_text(strip=True) if span else ""
+
+                if span:
+                    span.extract()
+
+                definition_text = p.get_text(separator=", ", strip=True)
+
+                if span_title not in parsed_info["simple_defs"]:
+                    parsed_info["simple_defs"][span_title] = []
+                parsed_info["simple_defs"][span_title].append(definition_text)
+
+    return parsed_info

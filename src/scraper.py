@@ -29,7 +29,7 @@ class ZDicCharacterParser:
         sijiao: str | None,
     }
     - definitions = {
-        simple_def = list[dict[str, list[str]]],
+        simple_defs = dict[str, dict[str, list[str]]]
     }
 
     Methods:
@@ -55,6 +55,10 @@ class ZDicCharacterParser:
         parsed: ParsedSections = parse_html(response.text)
         self.character_info = parsed.get("character_info", {})
         self.definitions = parsed.get("definitions", {})
+
+
+    def search_async(self):
+        pass
 
     """ 
     Actions:
@@ -105,5 +109,4 @@ class ZDicCharacterParser:
     def get_definition_simple(self):
         pass
 
-    def get_definition_detailed(self):
-        pass
+

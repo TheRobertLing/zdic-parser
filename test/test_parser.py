@@ -14,7 +14,6 @@ from test_data import (
 from src.types import (
     CharacterInfo,
     Definitions,
-    RelatedCharacters,
     ParsedSections,
 )
 from src.parser import (
