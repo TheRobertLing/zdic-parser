@@ -1,32 +1,42 @@
 from bs4 import BeautifulSoup
 import bs4
 import logging
-from .types import CharacterInfo, Definitions, RelatedCharacters
+from .types import CharacterInfo, Definitions, RelatedCharacters, ParsedSections
 from .exceptions import ElementIsMissingException
 
+# Key map
+keys: dict[str, str] = {
+    "拼音": "pinyin",
+    "注音": "zhuyin",
+    "部首": "radical",
+    "部外": "non_radical_stroke_count",
+    "总笔画": "total_stroke_count",
+    "總筆畫": "total_stroke_count",
+    "繁体": "simple_trad",
+    "繁體": "simple_trad",
+    "简体": "simple_trad",
+    "簡體": "simple_trad",
+    "异体字": "variant_characters",
+    "異體字": "variant_characters",
+    "统一码": "unicode",
+    "統一碼": "unicode",
+    "字形分析": "character_structure",
+    "笔顺": "stroke_order",
+    "筆順": "stroke_order",
+    "五笔": "wubi",
+    "五筆": "wubi",
+    "仓颉": "cangjie",
+    "倉頡": "cangjie",
+    "郑码": "zhengma",
+    "鄭碼": "zhengma",
+    "四角": "sijiao",
+}
 
-def get_sections(soup: BeautifulSoup) -> dict[str, bs4.element.Tag | None]:
-    info_card: bs4.element.Tag | None = soup.select_one(
-        "body main div.zdict div.res_c_center "
-        "div.shiyi_content.res_c_center_content div.entry_title table"
-    )
 
-    definitions_card: bs4.element.Tag | None = soup.select_one(
-        "body main div.zdict div.res_c_center "
-        "div.shiyi_content.res_c_center_content div.homograph-entry "
-        "div.dictionaries.zdict"
-    )
+def parse_html(html: str) -> ParsedSections:
+    # Create soup
+    soup = BeautifulSoup(html, "lxml")
 
-    side_card: bs4.element.Tag | None = soup.select_one("body main div.zdict div.res_c_right")
-
-    return {
-        'info_card': info_card,
-        'definitions_card': definitions_card,
-        'side_card': side_card
-    }
-
-
-def parse_soup(soup: BeautifulSoup) -> dict[str, CharacterInfo | Definitions | RelatedCharacters]:
     # Parse all sections
     character_info_section: bs4.element.Tag | None = soup.select_one(
         "body main div.zdict div.res_c_center "  # Locate position in general layout
@@ -46,9 +56,9 @@ def parse_soup(soup: BeautifulSoup) -> dict[str, CharacterInfo | Definitions | R
     related_character: RelatedCharacters = parse_related_characters_section(related_characters_section)
 
     return {
-        'character_info': character_info,
-        'definitions': definitions,
-        'related_character': related_character,
+        "character_info": character_info,
+        "definitions": definitions,
+        "related_character": related_character,
     }
 
 
@@ -80,7 +90,6 @@ def parse_character_info_section(info_card: bs4.element.Tag | None) -> Character
             for title_td, value_td in zip(title_tds, value_tds):
                 title: str = title_td.get_text(strip=True)
                 classes: list[str] = value_td.get("class", [])
-                value: str = ""
 
                 if "z_bs2" in classes or "z_jfz" in classes:
                     # Special case: multiple title-value pairs inside <p> elements
@@ -95,12 +104,12 @@ def parse_character_info_section(info_card: bs4.element.Tag | None) -> Character
                         span_value = p.get_text(separator=", ", strip=True)
 
                         if span_title and span_value:
-                            parsed_info[span_title] = span_value
+                            parsed_info[keys[span_title]] = span_value
                 else:
                     value = value_td.get_text(separator=", ", strip=True)
 
                     if title and value:
-                        parsed_info[title] = value
+                        parsed_info[keys[title]] = value
 
         return parsed_info
 
@@ -110,8 +119,8 @@ def parse_character_info_section(info_card: bs4.element.Tag | None) -> Character
 
 
 def parse_definitions_section(definitions_card: bs4.element.Tag) -> dict[str, list[dict[str, list[str]]]]:
-    pass
+    return {}
 
 
 def parse_related_characters_section(side_card: bs4.element.Tag) -> dict[str, list[str]]:
-    pass
+    return {}

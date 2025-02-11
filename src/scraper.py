@@ -1,8 +1,7 @@
-import bs4
 from bs4 import BeautifulSoup
 import httpx
-from .utils import get_sections
-from .types import CharacterInfo, Definitions, RelatedCharacters
+from .parser import parse_html
+from .types import CharacterInfo, Definitions, RelatedCharacters, ParsedSections
 
 
 class ZDicCharacterParser:
@@ -43,47 +42,24 @@ class ZDicCharacterParser:
     """
     BASE_URL = "https://www.zdic.net/han{mode}/{character}"
 
-    def __init__(self, html: str):
+    def __init__(self):
         self.character_info: CharacterInfo = {}
         self.definitions: Definitions = {}
         self.related_character: RelatedCharacters = {}
 
-    def search_v2(self, character: str, timeout: int = 5) -> None:
-        full_url = self.BASE_URL.format(mode=self, character=character)
-        try:
-            response = httpx.get(full_url, timeout=timeout)
-            response.raise_for_status()
-        except httpx.TimeoutException:
-            print("HTTP request timed out.")
-        except httpx.ConnectError:
-            print("Connection error. Please check your internet connection.")
-        except httpx.HTTPStatusError as e:
-            print(f"HTTP error: {e.response.status_code} - {e.response.text}")
-        except httpx.RequestError as e:
-            print(f"An error occurred while making the request: {str(e)}")
-
-    @classmethod
-    def search(cls, character: str, mode: str = "s", timeout: int = 5):
-        """ Static constructor for synchronous requests """
+    def search(self, character: str, mode: str = "s", timeout: int = 5) -> None:
         if mode not in ("s", "t"):
             raise ValueError("mode must be either 's' (Simplified Chinese) or 't' (Traditional Chinese).")
 
-        full_url = cls.BASE_URL.format(mode=mode, character=character)
+        full_url = self.BASE_URL.format(mode=mode, character=character)
 
-        try:
-            response = httpx.get(full_url, timeout=timeout)
-            response.raise_for_status()
-            return cls(response.text)
-        except httpx.TimeoutException:
-            print("HTTP request timed out.")
-        except httpx.ConnectError:
-            print("Connection error. Please check your internet connection.")
-        except httpx.HTTPStatusError as e:
-            print(f"HTTP error: {e.response.status_code} - {e.response.text}")
-        except httpx.RequestError as e:
-            print(f"An error occurred while making the request: {str(e)}")
+        response = httpx.get(full_url, timeout=timeout)
+        response.raise_for_status()
 
-        return None
+        parsed: ParsedSections = parse_html(response.text)
+        self.character_info = parsed.get("character_info", {})
+        self.definitions = parsed.get("definitions", {})
+        self.related_character = parsed.get("related_character", {})
 
     """ 
     Actions:

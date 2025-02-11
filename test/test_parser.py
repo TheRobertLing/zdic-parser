@@ -1,90 +1,90 @@
 import pytest
 from src.scraper import ZDicCharacterParser
 import bs4
-from collections import Counter
+from test_utils import (
+    fetch_character_html,
+    fetch_character_info_section,
+    fetch_definitions_section,
+    fetch_related_characters_section,
+)
+from test_data import (
+    fetch_character_html_data,
+    fetch_character_info_section_data,
+)
+from src.types import (
+    CharacterInfo,
+    Definitions,
+    RelatedCharacters,
+    ParsedSections
+)
+from src.parser import (
+    parse_html,
+    parse_character_info_section,
+    parse_definitions_section,
+    parse_related_characters_section
+)
+
 
 test_characters = "蔡徐坤鸡你太美𫮃𬺓𬙋耰𩾌𬙊𬶋𬶍𬭚𬭛陎𫵷鱲䲘鱣纕鸊鸏乾幹個豐餜餛闍淼溼擣𢷬蹵躕樐㯭艣艪"
-test_pinyin = [
-    ("篮", ["lán"]),
-    ("籃", ["lán"]),
-    ("球", ["qiú"]),
-    ("鸡", ["jī"]),
-    ("鷄", ["jī"]),
-    ("鄀", ["ruò"]),
-    ("眍", ["kōu"]),
-    ("瞘", ["kōu"]),
-    ("毗", ["pí"]),
-    ("彳", ["chì"]),
-    ("癿", ["qié"]),
-]
-test_pinyin_dyz = [
-    ("种", ["zhǒng", "zhòng", "chóng"]),
-    # ("種", ["zhǒng", "zhòng", "chóng"]), zdic error probably
-    ("叕", ["zhuì", "zhuó", "yǐ", "jué"]),
-    ("华", ["huá", "huà", "huā"]),
-    ("亹", ["wěi", "mén"]),
-    ("柁", ["tuó", "duò"]),
-    ("戧", ["qiāng", "qiàng"]),
-    ("僥", ["jiǎo", "yáo"]),
-    ("攢", ["zǎn", "cuán"]),
-    ("㥮", ["zhòu", "chăo"]),
-    ("㤘", ["zhòu", "chăo"]),
-    ("和", ["hé", "hè", "huó", "huò", "hú"]),
-]
-test_pinyin_invalid = "𬣙𪨰𫭢𫘪𣗋𬙂䎖"
 
 
+@pytest.mark.parametrize("character", list(fetch_character_html_data))
+def test_parse_html(character: str):
+    html: str = fetch_character_html(character)
+
+    # Sanity check to just confirm that the utility function actually returned something valid
+    assert "<html " in html, "fetch_character_html failed: No valid HTML returned"
+
+    parsed: ParsedSections = parse_html(html)
+    assert 'character_info' in parsed, f"Missing key character_info in {parsed}"
+    assert 'definitions' in parsed, f"Missing key definitions in {parsed}"
+    assert 'related_character' in parsed, f"Missing key related_character in {parsed}"
+    assert isinstance(parsed['character_info'], dict)
+    assert isinstance(parsed['definitions'], dict)
+    assert isinstance(parsed['related_character'], dict)
 
 
-@pytest.mark.parametrize("character", list(test_characters))
-def test_character_sections(character):
-    """ Test if each character successfully returns a valid section """
-    parser: ZDicCharacterParser | None = ZDicCharacterParser.search(character)
-    assert parser is not None, f"Failed to fetch data for character {character}"
-    assert parser.sections is not None, f"Sections doesn't even exist"
+@pytest.mark.parametrize("character, expected_keys", fetch_character_info_section_data.items())
+def test_character_info_section(character: str, expected_keys: dict[str, bool]):
+    html: str = fetch_character_html(character)
 
-    info_card: bs4.element.Tag | None = parser.sections['info_card']
-    assert info_card is not None, f"info_card is None for {character}"
+    # Sanity check to just confirm that the utility function actually returned something valid
+    assert "<html " in html, "fetch_character_html failed: No valid HTML returned"
 
-    definitions_card: bs4.element.Tag | None = parser.sections['definitions_card']
-    assert definitions_card is not None, f"definitions_card is None for {character}"
+    section: bs4.element.Tag | None = fetch_character_info_section(html)
 
-    side_card: bs4.element.Tag | None = parser.sections['side_card']
-    assert side_card is not None, f"side_card is None for {character}"
+    # If this ever fails, it most likely means zdic's structure changed
+    assert section is not None, f"Zdic's structure must've changed if you see this"
+
+    parsed_data: CharacterInfo = parse_character_info_section(section)
+
+    # Use for loop to confirm existence of key-value pairs
+    for key, value in expected_keys.items():
+        assert (key in parsed_data) == value, f"Key '{key}' presence mismatch for character '{character}'"
 
 
 @pytest.mark.parametrize("character", list(test_characters))
-def test_get_img_src(character):
-    """ Test if an image is successfully returned for each character """
-    parser: ZDicCharacterParser = ZDicCharacterParser.search(character)
+def test_parse_definitions_section(character):
+    html: str = fetch_character_html(character)
 
-    img_src: str | None = parser.get_img_src()
-    assert img_src is not None, f"Could not find the svg for {character}"
+    # Sanity check to just confirm that the utility function actually returned something valid
+    assert "<html " in html, "fetch_character_html failed: No valid HTML returned"
 
+    section: bs4.element.Tag | None = fetch_definitions_section(html)
 
-@pytest.mark.parametrize("character, expected", test_pinyin)
-def test_get_pinyin(character, expected):
-    parser: ZDicCharacterParser = ZDicCharacterParser.search(character)
-
-    pinyin_list: list[str] | None = parser.get_pinyin()
-    assert pinyin_list is not None, f"There was no pinyin found for {character}"
-    assert Counter(pinyin_list) == Counter(expected), f"{character} should only have one pronunciation"
+    # If this ever fails, it most likely means zdic's structure changed
+    assert section is not None, f"Zdic's structure must've changed if you see this"
 
 
-@pytest.mark.parametrize("character, expected", test_pinyin_dyz)
-def test_get_pinyin_dyz(character, expected):
-    parser: ZDicCharacterParser = ZDicCharacterParser.search(character)
+@pytest.mark.parametrize("character", list(test_characters))
+def test_related_characters_section(character):
+    html: str = fetch_character_html(character)
 
-    pinyin_list: list[str] | None = parser.get_pinyin()
-    assert pinyin_list is not None, f"There was no pinyin found for {character}"
-    assert Counter(pinyin_list) == Counter(expected), (f"{character} should have more than one pronunciation, but only "
-                                                       f"got {pinyin_list}")
+    # Sanity check to just confirm that the utility function actually returned something valid
+    assert "<html " in html, "fetch_character_html failed: No valid HTML returned"
 
+    section: bs4.element.Tag | None = fetch_related_characters_section(html)
 
-@pytest.mark.parametrize("character", test_pinyin_invalid)
-def test_get_pinyin_invalid(character):
-    parser: ZDicCharacterParser = ZDicCharacterParser.search(character)
-
-    pinyin_list: list[str] | None = parser.get_pinyin()
-    assert pinyin_list is None, f"There was no pinyin found for {character}"
+    # If this ever fails, it most likely means zdic's structure changed
+    assert section is not None, f"Zdic's structure must've changed if you see this"
 
