@@ -1,17 +1,66 @@
 import bs4
+from bs4 import BeautifulSoup
 import httpx
 from .utils import get_sections
-from bs4 import BeautifulSoup
+from .types import CharacterInfo, Definitions, RelatedCharacters
 
 
-class ZDicParser:
+class ZDicCharacterParser:
     """
     ZDic Chinese Character Data Parser
+
+    Fields:
+    - character_info = {
+        img_src: str | None,
+        pinyin: str, e.g. "he4, he3"
+        zhuyin: list[str],
+        radical: str | None,
+        non_radical_stroke_count: int | None,
+        total_stroke_count: int | None,
+        simple_trad: str,
+        variant_characters: list[str],
+        unicode: str | None,
+        character_structure: str | None,
+        stroke_order: str | None,
+        wubi: str | None,
+        cangjie: str | None,
+        zhengma: str | None,
+        sijiao: str | None,
+    }
+    - related_characters = {
+        homophones: list[str],
+        same_radical: list[str],
+        same_stroke_count: list[str],
+    }
+    - definitions = {
+        simple_def = list[dict[str, list[str]]],
+    }
+
+    Methods:
+        'get_' + dictionary key
+        e.g. get_pinyin, get_homophones, get_simple_def
+
     """
     BASE_URL = "https://www.zdic.net/han{mode}/{character}"
 
     def __init__(self, html: str):
-        self.sections: dict[str, bs4.element.Tag | None] = get_sections(BeautifulSoup(html, "lxml"))
+        self.character_info: CharacterInfo = {}
+        self.definitions: Definitions = {}
+        self.related_character: RelatedCharacters = {}
+
+    def search_v2(self, character: str, timeout: int = 5) -> None:
+        full_url = self.BASE_URL.format(mode=self, character=character)
+        try:
+            response = httpx.get(full_url, timeout=timeout)
+            response.raise_for_status()
+        except httpx.TimeoutException:
+            print("HTTP request timed out.")
+        except httpx.ConnectError:
+            print("Connection error. Please check your internet connection.")
+        except httpx.HTTPStatusError as e:
+            print(f"HTTP error: {e.response.status_code} - {e.response.text}")
+        except httpx.RequestError as e:
+            print(f"An error occurred while making the request: {str(e)}")
 
     @classmethod
     def search(cls, character: str, mode: str = "s", timeout: int = 5):
@@ -41,66 +90,13 @@ class ZDicParser:
     """
 
     def get_img_src(self) -> str | None:
-        # Check if the section for the image exists
-        if not self.sections['info_card']:
-            return None
-
-        td: bs4.element.Tag | None = self.sections['info_card'].find("td", {"class": "ziif_d_l"})
-        if not td:
-            return None
-
-        # Check if the image exists
-        img: bs4.element.Tag | None = td.find('img')
-        if not img or not img.has_attr("src"):
-            return None
-
-        return img["src"]
+        pass
 
     def get_pinyin(self) -> list[str] | None:
-        # Check if the section for pinyin exists
-        if not self.sections['info_card']:
-            return None
-
-        table: bs4.element.Tag | None = self.sections['info_card'].find("table", {"border": "0"})
-        if not table:
-            return None
-
-        # Check if the pinyin exists
-        tds: list[bs4.element.Tag] = table.find_all("td", {"class": "z_py"})
-        if len(tds) == 2:
-            td = tds[1]
-        else:
-            return None
-
-        # Get all pinyin paragraphs
-        ps: list[bs4.element.Tag] = td.find_all('p')
-        if not ps:
-            return None
-
-        return [p.text.strip() for p in ps]
+        pass
 
     def get_zhuyin(self) -> list[str] | None:
-        # Check if the section for zhuyin exists
-        if not self.sections['info_card']:
-            return None
-
-        table: bs4.element.Tag | None = self.sections['info_card'].find("table", {"border": "0"})
-        if not table:
-            return None
-
-        # Check if the pinyin exists
-        tds: list[bs4.element.Tag] = table.find_all("td", {"class": "z_py"})
-        if len(tds) == 2:
-            td = tds[1]
-        else:
-            return None
-
-        # Get all pinyin paragraphs
-        ps: list[bs4.element.Tag] = td.find_all('p')
-        if not ps:
-            return None
-
-        return [p.text.strip() for p in ps]
+        pass
 
     def get_radical(self):
         pass

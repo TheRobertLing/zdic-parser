@@ -1,5 +1,5 @@
 import pytest
-from src.scraper import ZDicParser
+from src.scraper import ZDicCharacterParser
 import bs4
 from collections import Counter
 
@@ -39,7 +39,7 @@ test_pinyin_invalid = "𬣙𪨰𫭢𫘪𣗋𬙂䎖"
 @pytest.mark.parametrize("character", list(test_characters))
 def test_character_sections(character):
     """ Test if each character successfully returns a valid section """
-    parser: ZDicParser | None = ZDicParser.search(character)
+    parser: ZDicCharacterParser | None = ZDicCharacterParser.search(character)
     assert parser is not None, f"Failed to fetch data for character {character}"
     assert parser.sections is not None, f"Sections doesn't even exist"
 
@@ -56,7 +56,7 @@ def test_character_sections(character):
 @pytest.mark.parametrize("character", list(test_characters))
 def test_get_img_src(character):
     """ Test if an image is successfully returned for each character """
-    parser: ZDicParser = ZDicParser.search(character)
+    parser: ZDicCharacterParser = ZDicCharacterParser.search(character)
 
     img_src: str | None = parser.get_img_src()
     assert img_src is not None, f"Could not find the svg for {character}"
@@ -64,7 +64,7 @@ def test_get_img_src(character):
 
 @pytest.mark.parametrize("character, expected", test_pinyin)
 def test_get_pinyin(character, expected):
-    parser: ZDicParser = ZDicParser.search(character)
+    parser: ZDicCharacterParser = ZDicCharacterParser.search(character)
 
     pinyin_list: list[str] | None = parser.get_pinyin()
     assert pinyin_list is not None, f"There was no pinyin found for {character}"
@@ -73,7 +73,7 @@ def test_get_pinyin(character, expected):
 
 @pytest.mark.parametrize("character, expected", test_pinyin_dyz)
 def test_get_pinyin_dyz(character, expected):
-    parser: ZDicParser = ZDicParser.search(character)
+    parser: ZDicCharacterParser = ZDicCharacterParser.search(character)
 
     pinyin_list: list[str] | None = parser.get_pinyin()
     assert pinyin_list is not None, f"There was no pinyin found for {character}"
@@ -83,7 +83,7 @@ def test_get_pinyin_dyz(character, expected):
 
 @pytest.mark.parametrize("character", test_pinyin_invalid)
 def test_get_pinyin_invalid(character):
-    parser: ZDicParser = ZDicParser.search(character)
+    parser: ZDicCharacterParser = ZDicCharacterParser.search(character)
 
     pinyin_list: list[str] | None = parser.get_pinyin()
     assert pinyin_list is None, f"There was no pinyin found for {character}"
