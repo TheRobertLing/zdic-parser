@@ -1,7 +1,7 @@
-import pandas as pd
 import bs4
-from bs4 import BeautifulSoup
+import pandas as pd
 import httpx
+from bs4 import BeautifulSoup
 
 BASE_URL = "https://www.zdic.net/han{mode}/{character}"
 DATA_FILE = "data.xlsx"

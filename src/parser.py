@@ -1,6 +1,8 @@
-from bs4 import BeautifulSoup
-import bs4
 import logging
+
+import bs4
+from bs4 import BeautifulSoup
+
 from .types import CharacterInfo, Definitions, RelatedCharacters, ParsedSections
 from .exceptions import ElementIsMissingException
 

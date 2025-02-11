@@ -1,6 +1,6 @@
 import pytest
-from src.scraper import ZDicCharacterParser
 import bs4
+
 from test_utils import (
     fetch_character_html,
     fetch_character_info_section,
@@ -11,19 +11,19 @@ from test_data import (
     fetch_character_html_data,
     fetch_character_info_section_data,
 )
+
 from src.types import (
     CharacterInfo,
     Definitions,
     RelatedCharacters,
-    ParsedSections
+    ParsedSections,
 )
 from src.parser import (
     parse_html,
     parse_character_info_section,
     parse_definitions_section,
-    parse_related_characters_section
+    parse_related_characters_section,
 )
-
 
 test_characters = "蔡徐坤鸡你太美𫮃𬺓𬙋耰𩾌𬙊𬶋𬶍𬭚𬭛陎𫵷鱲䲘鱣纕鸊鸏乾幹個豐餜餛闍淼溼擣𢷬蹵躕樐㯭艣艪"
 
@@ -87,4 +87,3 @@ def test_related_characters_section(character):
 
     # If this ever fails, it most likely means zdic's structure changed
     assert section is not None, f"Zdic's structure must've changed if you see this"
-

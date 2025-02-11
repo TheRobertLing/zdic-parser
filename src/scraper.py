@@ -1,5 +1,7 @@
-from bs4 import BeautifulSoup
 import httpx
+
+from bs4 import BeautifulSoup
+
 from .parser import parse_html
 from .types import CharacterInfo, Definitions, RelatedCharacters, ParsedSections
 
