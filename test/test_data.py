@@ -257,3 +257,81 @@ fetch_character_info_section_data: dict[str, dict[str, bool]] = {
         "sijiao": False,
     },
 }
+
+fetch_related_characters_section_data = {
+    "蔡": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "徐": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "坤": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "张": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "国": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "荣": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "和": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "𬇙": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "𫘝": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "𪾢": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "𦭜": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "𫠊": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "鿍": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "𨱇": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+    "𣸣": {
+        "homophones": True,
+        "same_radical": True,
+        "same_stroke_count": True,
+    },
+}

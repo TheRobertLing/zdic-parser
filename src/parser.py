@@ -32,6 +32,10 @@ keys: dict[str, str] = {
     "郑码": "zhengma",
     "鄭碼": "zhengma",
     "四角": "sijiao",
+    "同音字": "homophones",
+    "同部首": "same_radical",
+    "同笔画": "same_stroke_count",
+    "同筆畫": "same_stroke_count",
 }
 
 
@@ -48,19 +52,14 @@ def parse_html(html: str) -> ParsedSections:
         "body main div.zdict div.res_c_center "  # Locate position in general layout
         "div.homograph-entry div.dictionaries.zdict"  # Select dictionary entries container
     )
-    related_characters_section: bs4.element.Tag | None = soup.select_one(
-        "body main div.zdict div.res_c_right"  # Locate position in general layout
-    )
 
     # Collate data
     character_info: CharacterInfo = parse_character_info_section(character_info_section)
     definitions: Definitions = parse_definitions_section(definitions_section)
-    related_character: RelatedCharacters = parse_related_characters_section(related_characters_section)
 
     return {
         "character_info": character_info,
         "definitions": definitions,
-        "related_character": related_character,
     }
 
 
@@ -94,7 +93,7 @@ def parse_character_info_section(info_card: bs4.element.Tag | None) -> Character
                 classes: list[str] = value_td.get("class", [])
 
                 if "z_bs2" in classes or "z_jfz" in classes:
-                    # Special case: multiple title-value pairs inside <p> elements
+                    # Special case for multiple title-value pairs inside <p> elements
                     for p in value_td.find_all("p", recursive=False):
                         span: bs4.element.Tag | None = p.find("span")
                         if span:
@@ -105,24 +104,21 @@ def parse_character_info_section(info_card: bs4.element.Tag | None) -> Character
 
                         span_value = p.get_text(separator=", ", strip=True)
 
-                        if span_title and span_value:
+                        if span_title and span_value and span_title in keys:
                             parsed_info[keys[span_title]] = span_value
                 else:
                     value = value_td.get_text(separator=", ", strip=True)
 
-                    if title and value:
+                    if title and value and title in keys:
                         parsed_info[keys[title]] = value
 
         return parsed_info
-
     except ElementIsMissingException as e:
         logging.error(e)
         return {}
 
 
-def parse_definitions_section(definitions_card: bs4.element.Tag) -> dict[str, list[dict[str, list[str]]]]:
+def parse_definitions_section(definitions_card: bs4.element.Tag) -> Definitions:
+    parsed_info: Definitions = {}
     return {}
 
-
-def parse_related_characters_section(side_card: bs4.element.Tag) -> dict[str, list[str]]:
-    return {}

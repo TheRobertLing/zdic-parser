@@ -36,14 +36,6 @@ def fetch_definitions_section(html: str) -> bs4.element.Tag | None:
         "div.homograph-entry div.dictionaries.zdict"  # Select dictionary entries container
     )
 
-
-def fetch_related_characters_section(html: str) -> bs4.element.Tag | None:
-    soup = BeautifulSoup(html, "lxml")
-    return soup.select_one(
-        "body main div.zdict div.res_c_right"  # Locate position in general layout
-    )
-
-
 def get_random_data(number: int = 50, seed: int = 1, mode: str = "Simplified") -> list[str]:
     """ Fetches sample data from data.xlsx for test """
     return [character.strip() for character in df[mode].dropna().sample(n=number, random_state=seed).tolist()]

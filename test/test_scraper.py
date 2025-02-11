@@ -7,7 +7,6 @@ class TestZdicScraper:
         scraper: ZDicCharacterParser = ZDicCharacterParser()
         assert scraper.character_info == {}
         assert scraper.definitions == {}
-        assert scraper.related_character == {}
 
     def test_search(self):
         """ Integration test for searching and parsing HTML """

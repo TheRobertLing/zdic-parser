@@ -3,7 +3,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from .parser import parse_html
-from .types import CharacterInfo, Definitions, RelatedCharacters, ParsedSections
+from .types import CharacterInfo, Definitions, ParsedSections
 
 
 class ZDicCharacterParser:
@@ -13,7 +13,7 @@ class ZDicCharacterParser:
     Fields:
     - character_info = {
         img_src: str | None,
-        pinyin: str, e.g. "he4, he3"
+        pinyin: str | None, e.g. "he4, he3"
         zhuyin: list[str],
         radical: str | None,
         non_radical_stroke_count: int | None,
@@ -27,11 +27,6 @@ class ZDicCharacterParser:
         cangjie: str | None,
         zhengma: str | None,
         sijiao: str | None,
-    }
-    - related_characters = {
-        homophones: list[str],
-        same_radical: list[str],
-        same_stroke_count: list[str],
     }
     - definitions = {
         simple_def = list[dict[str, list[str]]],
@@ -47,7 +42,6 @@ class ZDicCharacterParser:
     def __init__(self):
         self.character_info: CharacterInfo = {}
         self.definitions: Definitions = {}
-        self.related_character: RelatedCharacters = {}
 
     def search(self, character: str, mode: str = "s", timeout: int = 5) -> None:
         if mode not in ("s", "t"):
@@ -61,7 +55,6 @@ class ZDicCharacterParser:
         parsed: ParsedSections = parse_html(response.text)
         self.character_info = parsed.get("character_info", {})
         self.definitions = parsed.get("definitions", {})
-        self.related_character = parsed.get("related_character", {})
 
     """ 
     Actions:
@@ -105,15 +98,6 @@ class ZDicCharacterParser:
         pass
 
     def get_fcorners(self):
-        pass
-
-    def get_homophones(self):
-        pass
-
-    def get_same_radicals(self):
-        pass
-
-    def get_same_stroke_count(self):
         pass
 
     """ Work on these ones later """
