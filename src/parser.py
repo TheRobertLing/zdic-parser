@@ -63,60 +63,54 @@ def parse_html(html: str) -> ParsedSections:
     }
 
 
-def parse_character_info_section(info_card: bs4.element.Tag | None) -> CharacterInfo:
+def parse_character_info_section(info_card: bs4.element.Tag) -> CharacterInfo:
+    if info_card is None:
+        raise ElementIsMissingException()
+
     parsed_info: CharacterInfo = {}
 
-    try:
-        if info_card is None:
-            raise ElementIsMissingException()
+    # Extract image source
+    img_tag: bs4.element.Tag | None = info_card.select_one("td.ziif_d_l img")
+    if img_tag and img_tag.get("src"):
+        parsed_info["img_src"] = img_tag["src"]
 
-        # Extract image source
-        img_tag = info_card.select_one("td.ziif_d_l img")
-        if img_tag and img_tag.get("src"):
-            parsed_info["img_src"] = img_tag["src"]
+    # Extract character data
+    character_info_tables: list[bs4.element.Tag] = info_card.select("td:not(.ziif_d_l) table table")
 
-        # Extract character data
-        character_info_tables = info_card.select("td:not(.ziif_d_l) table table")
+    for table in character_info_tables:
+        trs: list[bs4.element.Tag] = table.find_all("tr", recursive=False)
+        if len(trs) != 2:
+            continue
 
-        for table in character_info_tables:
-            trs = table.find_all("tr", recursive=False)
-            if len(trs) != 2:
-                continue
+        title_tds: list[bs4.element.Tag] = trs[0].find_all("td", recursive=False)
+        value_tds: list[bs4.element.Tag] = trs[1].find_all("td", recursive=False)
 
-            title_tds: list[bs4.element.Tag] = trs[0].find_all("td", recursive=False)
-            value_tds: list[bs4.element.Tag] = trs[1].find_all("td", recursive=False)
-            if len(title_tds) != len(value_tds):
-                continue
+        if len(title_tds) != len(value_tds):
+            continue
 
-            for title_td, value_td in zip(title_tds, value_tds):
-                title: str = title_td.get_text(strip=True)
-                classes: list[str] = value_td.get("class", [])
+        for title_td, value_td in zip(title_tds, value_tds):
+            title:str = title_td.get_text(strip=True)
+            classes: list[str] = value_td.get("class", [])
 
-                if "z_bs2" in classes or "z_jfz" in classes:
-                    # Special case for multiple title-value pairs inside <p> elements
-                    for p in value_td.find_all("p", recursive=False):
-                        span: bs4.element.Tag | None = p.find("span")
-                        span_title: str
-                        if span:
-                            span_title = span.get_text(strip=True)
-                            span.extract()
-                        else:
-                            span_title = ""
+            if "z_bs2" in classes or "z_jfz" in classes:
+                # Handle cases where multiple title-value pairs exist inside <p> elements
+                for p in value_td.find_all("p", recursive=False):
+                    span: bs4.element.Tag = p.find("span")
+                    span_title: str = span.get_text(strip=True) if span else ""
+                    if span:
+                        span.extract()
 
-                        span_value = p.get_text(separator=", ", strip=True)
+                    span_value: str = p.get_text(separator=", ", strip=True)
 
-                        if span_title and span_value and span_title in keys:
-                            parsed_info[keys[span_title]] = span_value
-                else:
-                    value = value_td.get_text(separator=", ", strip=True)
+                    if span_title and span_value:
+                        parsed_info[keys[span_title]] = span_value
+            else:
+                value: str = value_td.get_text(separator=", ", strip=True)
 
-                    if title and value and title in keys:
-                        parsed_info[keys[title]] = value
+                if title and value:
+                    parsed_info[keys[title]] = value
 
-        return parsed_info
-    except ElementIsMissingException as e:
-        logging.error(e)
-        return {}
+    return parsed_info
 
 
 def parse_definitions_section(definitions_card: bs4.element.Tag) -> Definitions:
@@ -135,16 +129,16 @@ def parse_definitions_section(definitions_card: bs4.element.Tag) -> Definitions:
             filtered_dicpy: list[bs4.element.Tag] = [span for span in dicpy_list if span.find("span", {"class": "ptr"})]
 
             for dicpy in filtered_dicpy:
+                # Key is the pinyin/zhuyin pair for an entry
                 key: str = dicpy.get_text(separator=", ", strip=True)
-
                 key_parent: bs4.element.Tag | None = dicpy.find_parent("p")
                 if key_parent:
                     def_list: bs4.element.Tag | None = key_parent.find_next_sibling("ol")
-                    if def_list:
+                    if def_list and (def_list.find_all("li") or def_list.find_all("p")):
                         # Case 1: Definitions use <ol> with <li> e.g. most properly formatted pages
                         li_defs = [li.text.strip() for li in def_list.find_all("li")]
 
-                        # Case 2: Definitions use <ol> with <p>
+                        # Case 2: Definitions use <ol> with <p> e.g. the entry for 佚
                         p_tag = def_list.find("p")
                         if p_tag:
                             li_defs.append(p_tag.text.strip("◎ \u3000"))
@@ -155,7 +149,7 @@ def parse_definitions_section(definitions_card: bs4.element.Tag) -> Definitions:
 
                         parsed_info["simple_defs"][key].extend(li_defs)
                     else:
-                        # Case 3: Definitions use <p> instead of <ol>
+                        # Case 3: <p> element is not nested inside <ol> or <ol> does not exist e.g. the entry for 杉
                         p_tag: bs4.element.Tag | None = key_parent.find_next_sibling("p")
                         if p_tag and not (p_tag.find("strong") and "其它字义" in p_tag.find("strong").text):
                             if key not in parsed_info["simple_defs"]:

@@ -1,5 +1,6 @@
 fetch_character_html_data: str = "蔡徐坤鸡你太美𫮃𬺓𬙋耰𩾌𬙊𬶋𬶍𬭚𬭛陎𫵷鱲䲘鱣纕鸊鸏乾幹個豐餜餛闍淼溼擣𢷬蹵躕樐㯭艣艪"
 
+# Test data for fetching entries with varying present information
 fetch_character_info_section_data: dict[str, dict[str, bool]] = {
     "蔡": {
         "img_src": True,
@@ -258,3 +259,39 @@ fetch_character_info_section_data: dict[str, dict[str, bool]] = {
     },
 }
 
+# Test data fetching for entries that have definitions
+fetch_definitions_section_data_1: dict = {
+    "鸡": {
+        "jī, ㄐㄧˉ": ["家禽，品种很多，翅膀短，不能高飞；雄性能报晓，雌性能生蛋：公～。母～。～雏。"],
+        "英语": ["chicken"],
+        "德语": ["Huhn  (S, Bio)"],
+        "法语": ["poule,coq,poulet"],
+    },
+    "杉": {
+        "shān, ㄕㄢˉ": ["常绿乔木，树干很高很直。木材白色，质轻，有香味，可供建筑和制器具用。"],
+        "shā, ㄕㄚˉ": ["义同（一）：～木。～篙。"],
+        "英语": ["various species of pine and fir"],
+        "德语": ["Kiefer  (S)​,Tanne  (S)​,Zeder  (S)​,Kiefer  (S)​,Tanne, Fichte  (S)​,Zeder  (S)"],
+        "法语": ["sapin de Chine,Cunninghamia lanceolata"],
+    },
+    "佚": {
+        "yì, ㄧˋ": ["同“逸”。", "放荡：淫～。～游。", "美：～女。", "姓。"],
+        "dié, ㄉㄧㄝˊ": ["古同“迭”，轮流，更替。"],
+        "英语": ["indulge in pleasures; flee"],
+        "德语": ["faul, müßig ,Yi  (Eig, Fam)"],
+        "法语": ["oisif,fainéant,omettre"],
+    },
+    "𨚕": {
+        "biàn, ㄅㄧㄢˋ": ["邑名。", "姓。"],
+    }
+}
+
+# Test data fetching for entries that have no definitions
+fetch_definitions_section_data_2: dict = {
+    "𫚭": {},
+    "𬺓": {},
+    "𬙋": {},
+    "𬟁": {},
+    "𬸘": {},
+    "𫷷": {},
+}
