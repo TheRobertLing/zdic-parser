@@ -13,7 +13,7 @@ from test_data import (
     fetch_definitions_section_data_2,
 )
 
-from src.types import (
+from src.types.types import (
     CharacterInfo,
     Definitions,
     ParsedSections,

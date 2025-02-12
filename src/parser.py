@@ -1,10 +1,8 @@
-import logging
-
 import bs4
 from bs4 import BeautifulSoup
 
-from .types import CharacterInfo, Definitions, ParsedSections
-from .exceptions import ElementIsMissingException
+from src.types.types import CharacterInfo, Definitions, ParsedSections
+from src.exceptions.exceptions import ElementIsMissingException
 
 # Key map
 keys: dict[str, str] = {
@@ -32,10 +30,6 @@ keys: dict[str, str] = {
     "郑码": "zhengma",
     "鄭碼": "zhengma",
     "四角": "sijiao",
-    "同音字": "homophones",
-    "同部首": "same_radical",
-    "同笔画": "same_stroke_count",
-    "同筆畫": "same_stroke_count",
 }
 
 
