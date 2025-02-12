@@ -16,7 +16,7 @@ class ZDicCharacterParser:
         radical: str | None,
         non_radical_stroke_count: int | None,
         total_stroke_count: int | None,
-        simple_trad: str,
+        simple_trad: str | None,
         variant_characters: list[str],
         unicode: str | None,
         character_structure: str | None,
@@ -41,10 +41,10 @@ class ZDicCharacterParser:
         self.definitions: Definitions = {}
 
     def search(self, character: str, mode: str = "s", timeout: int = 5) -> None:
-        if mode not in ("s", "t"):
+        if mode.lower() not in ("s", "t"):
             raise ValueError("mode must be either 's' (Simplified Chinese) or 't' (Traditional Chinese).")
 
-        full_url = self.BASE_URL.format(mode=mode, character=character)
+        full_url = self.BASE_URL.format(mode=mode.lower(), character=character)
 
         response = httpx.get(full_url, timeout=timeout)
         response.raise_for_status()
@@ -78,15 +78,13 @@ class ZDicCharacterParser:
     async def fetch_pinyin(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        pinyin_list = parser.character_info.get("pinyin")
-        return ",".join(pinyin_list) if pinyin_list else None
+        return parser.character_info.get("pinyin")
 
     @staticmethod
     async def fetch_zhuyin(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        zhuyin_list = parser.character_info.get("zhuyin")
-        return ",".join(zhuyin_list) if zhuyin_list else None
+        return parser.character_info.get("zhuyin")
 
     @staticmethod
     async def fetch_radical(character: str, mode: str = "s", timeout: int = 5) -> str | None:
@@ -95,10 +93,22 @@ class ZDicCharacterParser:
         return parser.character_info.get("radical")
 
     @staticmethod
-    async def fetch_stroke_info(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+    async def fetch_non_radical_stroke_count(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("stroke_info")
+        return parser.character_info.get("non_radical_stroke_count")
+
+    @staticmethod
+    async def fetch_total_stroke_count(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.character_info.get("total_stroke_count")
+
+    @staticmethod
+    async def fetch_simple_trad(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.character_info.get("simple_trad")
 
     @staticmethod
     async def fetch_variants(character: str, mode: str = "s", timeout: int = 5) -> str | None:
@@ -167,20 +177,29 @@ class ZDicCharacterParser:
     def get_radical(self) -> str | None:
         return self.character_info.get("radical")
 
-    def get_stroke_info(self) -> str | None:
-        return self.character_info.get("stroke_info")
+    def get_non_radical_stroke_count(self) -> int | None:
+        non_radical_stroke_count = self.character_info.get("non_radical_stroke_count")
+        return int(non_radical_stroke_count) if non_radical_stroke_count is not None else None
 
-    def get_variants(self) -> str | None:
-        return self.character_info.get("variants")
+    def get_total_stroke_count(self) -> int | None:
+        total_stroke_count = self.character_info.get("total_stroke_count")
+        return int(total_stroke_count) if total_stroke_count is not None else None
+
+    def get_simple_trad(self) -> str | None:
+        return self.character_info.get("simple_trad")
+
+    def get_variant_characters(self) -> str | None:
+        return self.character_info.get("variant_characters")
 
     def get_unicode(self) -> str | None:
         return self.character_info.get("unicode")
 
-    def get_structure(self) -> str | None:
-        return self.character_info.get("structure")
+    def get_character_structure(self) -> str | None:
+        return self.character_info.get("character_structure")
 
-    def get_stroke_order(self) -> str | None:
-        return self.character_info.get("stroke_order")
+    def get_stroke_order(self) -> int | None:
+        stroke_order = self.character_info.get("stroke_order")
+        return int(stroke_order) if stroke_order is not None else None
 
     def get_wubi(self) -> str | None:
         return self.character_info.get("wubi")
@@ -191,8 +210,9 @@ class ZDicCharacterParser:
     def get_zhengma(self) -> str | None:
         return self.character_info.get("zhengma")
 
-    def get_fcorners(self) -> str | None:
-        return self.character_info.get("fcorners")
+    def get_fcorners(self) -> int | None:
+        fcorners = self.character_info.get("fcorners")
+        return int(fcorners) if fcorners is not None else None
 
-    def get_simple_defs(self) -> str | None:
+    def get_simple_defs(self) -> dict[str, list[str]]:
         return self.definitions.get("simple_defs")
