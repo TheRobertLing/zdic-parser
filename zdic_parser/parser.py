@@ -1,170 +1,235 @@
-import bs4
-from bs4 import BeautifulSoup
+import httpx
 
-from .types.types import CharacterInfo, Definitions, ParsedSections
-from zdic_parser.exceptions import ElementIsMissingException
-
-# Key map
-keys: dict[str, str] = {
-    "拼音": "pinyin",
-    "注音": "zhuyin",
-    "部首": "radical",
-    "部外": "non_radical_stroke_count",
-    "总笔画": "total_stroke_count",
-    "總筆畫": "total_stroke_count",
-    "繁体": "simple_trad",
-    "繁體": "simple_trad",
-    "简体": "simple_trad",
-    "簡體": "simple_trad",
-    "异体字": "variant_characters",
-    "異體字": "variant_characters",
-    "统一码": "unicode",
-    "統一碼": "unicode",
-    "字形分析": "character_structure",
-    "笔顺": "stroke_order",
-    "筆順": "stroke_order",
-    "五笔": "wubi",
-    "五筆": "wubi",
-    "仓颉": "cangjie",
-    "倉頡": "cangjie",
-    "郑码": "zhengma",
-    "鄭碼": "zhengma",
-    "四角": "fcornersw",
-}
+from .parser_algorithms import parse_html
+from .type_definitions import CharacterInfo, Definitions, ParsedSections
 
 
-def parse_html(html: str) -> ParsedSections:
-    # Create soup
-    soup = BeautifulSoup(html, "lxml")
+class ZDicCharacterParser:
+    """
+    A utility class for scraping and retrieving data from ZDic.
 
-    # Parse all sections
-    character_info_section: bs4.element.Tag | None = soup.select_one(
-        "body main div.zdict div.res_c_center "  # Locate position in general layout
-        "div.entry_title table"  # Select the character information table
-    )
-    definitions_section: bs4.element.Tag | None = soup.select_one(
-        "body main div.zdict div.res_c_center "  # Locate position in general layout
-        "div.homograph-entry div.dictionaries.zdict"  # Select dictionary entries container
-    )
+    Attributes:
+        character_info (dict): A dictionary containing various details about a Chinese character.
+            Note: Not all keys may be present in every entry.
 
-    # Collate data
-    character_info: CharacterInfo = parse_character_info_section(character_info_section)
-    definitions: Definitions = parse_definitions_section(definitions_section)
+            Possible keys:
+            - img_src (str, optional): URL of the character's image.
+            - pinyin (str, optional): Pinyin representation.
+            - zhuyin (str, optional): Zhuyin (Bopomofo) notation.
+            - radical (str, optional): Radical component.
+            - non_radical_stroke_count (int, optional): Stroke count excluding the radical.
+            - total_stroke_count (int, optional): Total stroke count.
+            - simple_trad (str, optional): Simplified and traditional forms.
+            - variant_characters (str, optional): Alternative character forms.
+            - unicode (str, optional): Unicode representation.
+            - character_structure (str, optional): Structural composition.
+            - stroke_order (str, optional): Stroke order diagram or data.
+            - wubi (str, optional): Wubi input method code.
+            - cangjie (str, optional): Cangjie input method code.
+            - zhengma (str, optional): Zhengma input method code.
+            - fcorners (int, optional): Four-corner input method code.
 
-    return {
-        "character_info": character_info,
-        "definitions": definitions,
-    }
+        definitions (dict): A dictionary containing character definitions.
+            - simple_defs (dict): Basic definitions of the character.
 
+    Methods:
+        search(character: str, mode: str = "s", timeout: int = 5) -> None:
+            Performs a synchronous search for a given Chinese character.
 
-def parse_character_info_section(info_card: bs4.element.Tag) -> CharacterInfo:
-    if info_card is None:
-        raise ElementIsMissingException()
+        search_async(character: str, mode: str = "s", timeout: int = 5) -> None:
+            Performs an asynchronous search for a given Chinese character.
 
-    parsed_info: CharacterInfo = {}
+        Various static getter methods for retrieving specific data fields, without the need for instantiation,
+        following the naming pattern:
+            - fetch_<field_name>(), e.g., fetch_img_src(), fetch_pinyin().
 
-    # Extract image source
-    img_tag: bs4.element.Tag | None = info_card.select_one("td.ziif_d_l img")
-    if img_tag and img_tag.get("zdic_parser"):
-        parsed_info["img_src"] = img_tag["zdic_parser"]
+        Various getter methods for retrieving specific data fields, following the naming pattern:
+            - get_<field_name>(), e.g., get_pinyin(), get_fcorners(), get_simple_defs().
 
-    # Extract character data
-    character_info_tables: list[bs4.element.Tag] = info_card.select("td:not(.ziif_d_l) table table")
+    Example:
+        >>> parser = ZDicCharacterParser()
+        >>> parser.search("你")
+        >>> print(parser.get_pinyin())
+    """
+    BASE_URL = "https://www.zdic.net/han{mode}/{character}"
 
-    for table in character_info_tables:
-        trs: list[bs4.element.Tag] = table.find_all("tr", recursive=False)
-        if len(trs) != 2:
-            continue
+    def __init__(self):
+        self.character_info: CharacterInfo = {}
+        self.definitions: Definitions = {}
 
-        title_tds: list[bs4.element.Tag] = trs[0].find_all("td", recursive=False)
-        value_tds: list[bs4.element.Tag] = trs[1].find_all("td", recursive=False)
+    def search(self, character: str, mode: str = "s", timeout: int = 5) -> None:
+        if mode.lower() not in ("s", "t"):
+            raise ValueError("mode must be either 's' (Simplified Chinese) or 't' (Traditional Chinese).")
 
-        if len(title_tds) != len(value_tds):
-            continue
+        full_url = self.BASE_URL.format(mode=mode.lower(), character=character)
 
-        for title_td, value_td in zip(title_tds, value_tds):
-            title:str = title_td.get_text(strip=True)
-            classes: list[str] = value_td.get("class", [])
+        response = httpx.get(full_url, timeout=timeout)
+        response.raise_for_status()
 
-            if "z_bs2" in classes or "z_jfz" in classes:
-                # Handle cases where multiple title-value pairs exist inside <p> elements
-                for p in value_td.find_all("p", recursive=False):
-                    span: bs4.element.Tag = p.find("span")
-                    span_title: str = span.get_text(strip=True) if span else ""
-                    if span:
-                        span.extract()
+        parsed: ParsedSections = parse_html(response.text)
+        self.character_info = parsed.get("character_info", {})
+        self.definitions = parsed.get("definitions", {})
 
-                    span_value: str = p.get_text(separator=", ", strip=True)
+    async def search_async(self, character: str, mode: str = "s", timeout: int = 5) -> None:
+        if mode not in ("s", "t"):
+            raise ValueError("mode must be either 's' (Simplified Chinese) or 't' (Traditional Chinese).")
 
-                    if span_title and span_value:
-                        parsed_info[keys[span_title]] = span_value
-            else:
-                value: str = value_td.get_text(separator=", ", strip=True)
+        full_url = self.BASE_URL.format(mode=mode, character=character)
 
-                if title and value:
-                    parsed_info[keys[title]] = value
+        async with httpx.AsyncClient() as client:
+            response = await client.get(full_url, timeout=timeout)
+            response.raise_for_status()
 
-    return parsed_info
+        parsed: ParsedSections = parse_html(response.text)
+        self.character_info = parsed.get("character_info", {})
+        self.definitions = parsed.get("definitions", {})
 
+    # STATIC METHODS
+    @staticmethod
+    async def fetch_img_src(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_img_src()
 
-def parse_definitions_section(definitions_card: bs4.element.Tag) -> Definitions:
-    if definitions_card is None:
-        raise ElementIsMissingException()
+    @staticmethod
+    async def fetch_pinyin(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_pinyin()
 
-    parsed_info: Definitions = {"simple_defs": {}}
+    @staticmethod
+    async def fetch_zhuyin(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_zhuyin()
 
-    # Get simple definitions
-    simple_defs: bs4.element.Tag | None = definitions_card.select_one("div.content.definitions.jnr")
-    if simple_defs:
-        # Extract Chinese definitions
-        dicpy_list = simple_defs.select("p > span.dicpy")
-        if dicpy_list:
-            # Necessary filter for certain edge cases
-            filtered_dicpy: list[bs4.element.Tag] = [span for span in dicpy_list if span.find("span", {"class": "ptr"})]
+    @staticmethod
+    async def fetch_radical(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_radical()
 
-            for dicpy in filtered_dicpy:
-                # Key is the pinyin/zhuyin pair for an entry
-                key: str = dicpy.get_text(separator=", ", strip=True)
-                key_parent: bs4.element.Tag | None = dicpy.find_parent("p")
-                if key_parent:
-                    def_list: bs4.element.Tag | None = key_parent.find_next_sibling("ol")
-                    if def_list and (def_list.find_all("li") or def_list.find_all("p")):
-                        # Case 1: Definitions use <ol> with <li> e.g. most properly formatted pages
-                        li_defs = [li.text.strip() for li in def_list.find_all("li")]
+    @staticmethod
+    async def fetch_non_radical_stroke_count(character: str, mode: str = "s", timeout: int = 5) -> int | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_non_radical_stroke_count()
 
-                        # Case 2: Definitions use <ol> with <p> e.g. the entry for 佚
-                        p_tag = def_list.find("p")
-                        if p_tag:
-                            li_defs.append(p_tag.text.strip("◎ \u3000"))
+    @staticmethod
+    async def fetch_total_stroke_count(character: str, mode: str = "s", timeout: int = 5) -> int | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_total_stroke_count()
 
-                        # Check key doesn't exist already, otherwise append definitions
-                        if key not in parsed_info["simple_defs"]:
-                            parsed_info["simple_defs"][key] = []
+    @staticmethod
+    async def fetch_simple_trad(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_simple_trad()
 
-                        parsed_info["simple_defs"][key].extend(li_defs)
-                    else:
-                        # Case 3: <p> element is not nested inside <ol> or <ol> does not exist e.g. the entry for 杉
-                        p_tag: bs4.element.Tag | None = key_parent.find_next_sibling("p")
-                        if p_tag and not (p_tag.find("strong") and "其它字义" in p_tag.find("strong").text):
-                            if key not in parsed_info["simple_defs"]:
-                                parsed_info["simple_defs"][key] = []
+    @staticmethod
+    async def fetch_variant_characters(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_variant_characters()
 
-                            parsed_info["simple_defs"][key].append(p_tag.text.strip("◎ \u3000"))
+    @staticmethod
+    async def fetch_unicode(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_unicode()
 
-        # Extract non-Chinese definitions
-        other_defs: bs4.element.Tag | None = simple_defs.find("div", {"class": "enbox"})
-        if other_defs:
-            for p in other_defs.find_all("p", recursive=False):
-                span: bs4.element.Tag | None = p.find("span")
-                span_title: str = span.get_text(strip=True) if span else ""
+    @staticmethod
+    async def fetch_character_structure(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_character_structure()
 
-                if span:
-                    span.extract()
+    @staticmethod
+    async def fetch_stroke_order(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_stroke_order()
 
-                definition_text = p.get_text(separator=", ", strip=True)
+    @staticmethod
+    async def fetch_wubi(character: str, mode: str = "s", timeout: int = 5) -> int | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_wubi()
 
-                if span_title not in parsed_info["simple_defs"]:
-                    parsed_info["simple_defs"][span_title] = []
-                parsed_info["simple_defs"][span_title].append(definition_text)
+    @staticmethod
+    async def fetch_cangjie(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_cangjie()
 
-    return parsed_info
+    @staticmethod
+    async def fetch_zhengma(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_zhengma()
+
+    @staticmethod
+    async def fetch_fcorners(character: str, mode: str = "s", timeout: int = 5) -> int | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_fcorners()
+
+    @staticmethod
+    async def fetch_simple_defs(character: str, mode: str = "s", timeout: int = 5) -> dict[str, list[str]] | None:
+        parser = ZDicCharacterParser()
+        await parser.search_async(character, mode, timeout)
+        return parser.get_simple_defs()
+
+    # GETTERS
+    def get_img_src(self) -> str | None:
+        return self.character_info.get("img_src")
+
+    def get_pinyin(self) -> str | None:
+        return self.character_info.get("pinyin")
+
+    def get_zhuyin(self) -> str | None:
+        return self.character_info.get("zhuyin")
+
+    def get_radical(self) -> str | None:
+        return self.character_info.get("radical")
+
+    def get_non_radical_stroke_count(self) -> int | None:
+        non_radical_stroke_count = self.character_info.get("non_radical_stroke_count")
+        return int(non_radical_stroke_count) if non_radical_stroke_count is not None else None
+
+    def get_total_stroke_count(self) -> int | None:
+        total_stroke_count = self.character_info.get("total_stroke_count")
+        return int(total_stroke_count) if total_stroke_count is not None else None
+
+    def get_simple_trad(self) -> str | None:
+        return self.character_info.get("simple_trad")
+
+    def get_variant_characters(self) -> str | None:
+        return self.character_info.get("variant_characters")
+
+    def get_unicode(self) -> str | None:
+        return self.character_info.get("unicode")
+
+    def get_character_structure(self) -> str | None:
+        return self.character_info.get("character_structure")
+
+    def get_stroke_order(self) -> int | None:
+        stroke_order = self.character_info.get("stroke_order")
+        return int(stroke_order) if stroke_order is not None else None
+
+    def get_wubi(self) -> str | None:
+        return self.character_info.get("wubi")
+
+    def get_cangjie(self) -> str | None:
+        return self.character_info.get("cangjie")
+
+    def get_zhengma(self) -> str | None:
+        return self.character_info.get("zhengma")
+
+    def get_fcorners(self) -> int | None:
+        fcorners = self.character_info.get("fcorners")
+        return int(fcorners) if fcorners is not None else None
+
+    def get_simple_defs(self) -> dict[str, list[str]]:
+        return self.definitions.get("simple_defs")

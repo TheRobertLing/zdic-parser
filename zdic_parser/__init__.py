@@ -1,1 +1,1 @@
-from .scraper import ZDicCharacterParser
+from .parser import ZDicCharacterParser

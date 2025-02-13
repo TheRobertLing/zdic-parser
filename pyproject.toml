@@ -12,17 +12,18 @@ authors = [
 ]
 license = {file = "LICENSE"}
 dependencies = [
-    "beautifulsoup4",  # For parsing HTML
-    "httpx>=0.23.0",   # For making HTTP requests
+    "beautifulsoup4",
+    "httpx>=0.23.0",
+    "lxml",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",  # For testing
+    "pytest",
 ]
 
 [tool.setuptools]
-packages = ["zdic_parser"]  # Ensure only your package is included
+packages = ["zdic_parser"]
 
 [project.urls]
 Homepage = "https://github.com/TheRobertLing/zdic-parser"
