@@ -29,7 +29,7 @@ keys: dict[str, str] = {
     "倉頡": "cangjie",
     "郑码": "zhengma",
     "鄭碼": "zhengma",
-    "四角": "fcorners",
+    "四角": "fcornersw",
 }
 
 

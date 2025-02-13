@@ -6,33 +6,35 @@ from src.types.types import CharacterInfo, Definitions, ParsedSections
 
 class ZDicCharacterParser:
     """
-    ZDic Chinese Character Data Parser
+    A utility class for storing and retrieving data scraped from ZDic.
 
-    Fields:
-    character_info = {
-        img_src: str | None,
-        pinyin: list[str],
-        zhuyin: list[str],
-        radical: str | None,
-        non_radical_stroke_count: int | None,
-        total_stroke_count: int | None,
-        simple_trad: str | None,
-        variant_characters: list[str],
-        unicode: str | None,
-        character_structure: str | None,
-        stroke_order: str | None,
-        wubi: str | None,
-        cangjie: str | None,
-        zhengma: str | None,
-        sijiao: str | None,
-    }
+    Attributes:
+        character_info (dict): A dictionary containing various details about a Chinese character.
+            Note: Not all keys may be present in every entry.
 
-    definitions = {
-        simple_defs = dict[str, dict[str, list[str]]]
-    }
+            Possible keys:
+            - img_src (str, optional): URL of the character's image.
+            - pinyin (str, optional): Pinyin representation.
+            - zhuyin (str, optional): Zhuyin (Bopomofo) notation.
+            - radical (str, optional): Radical component.
+            - non_radical_stroke_count (int, optional): Stroke count excluding the radical.
+            - total_stroke_count (int, optional): Total stroke count.
+            - simple_trad (str, optional): Simplified and traditional forms.
+            - variant_characters (list, optional): Alternative character forms.
+            - unicode (str, optional): Unicode representation.
+            - character_structure (str, optional): Structural composition.
+            - stroke_order (str, optional): Stroke order diagram or data.
+            - wubi (str, optional): Wubi input method code.
+            - cangjie (str, optional): Cangjie input method code.
+            - zhengma (str, optional): Zhengma input method code.
+            - fcorners (int, optional): Four-corner input method code.
+
+        definitions (dict): A dictionary containing character definitions.
+            - simple_defs (dict): Basic definitions of the character.
 
     Methods:
-    'get_' + dictionary key e.g. get_pinyin, get_homophones, get_simple_defs
+        Various getter methods for retrieving specific data fields, following the naming pattern:
+            - get_<field_name>(), e.g., get_pinyin(), get_homophones(), get_simple_defs().
     """
     BASE_URL = "https://www.zdic.net/han{mode}/{character}"
 
@@ -72,97 +74,97 @@ class ZDicCharacterParser:
     async def fetch_img_src(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("img_src")
+        return parser.get_img_src()
 
     @staticmethod
     async def fetch_pinyin(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("pinyin")
+        return parser.get_pinyin()
 
     @staticmethod
     async def fetch_zhuyin(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("zhuyin")
+        return parser.get_zhuyin()
 
     @staticmethod
     async def fetch_radical(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("radical")
+        return parser.get_radical()
 
     @staticmethod
-    async def fetch_non_radical_stroke_count(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+    async def fetch_non_radical_stroke_count(character: str, mode: str = "s", timeout: int = 5) -> int | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("non_radical_stroke_count")
+        return parser.get_non_radical_stroke_count()
 
     @staticmethod
-    async def fetch_total_stroke_count(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+    async def fetch_total_stroke_count(character: str, mode: str = "s", timeout: int = 5) -> int | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("total_stroke_count")
+        return parser.get_total_stroke_count()
 
     @staticmethod
     async def fetch_simple_trad(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("simple_trad")
+        return parser.get_simple_trad()
 
     @staticmethod
-    async def fetch_variants(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+    async def fetch_variant_characters(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("variants")
+        return parser.get_variant_characters()
 
     @staticmethod
     async def fetch_unicode(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("unicode")
+        return parser.get_unicode()
 
     @staticmethod
-    async def fetch_structure(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+    async def fetch_character_structure(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("structure")
+        return parser.get_character_structure()
 
     @staticmethod
     async def fetch_stroke_order(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("stroke_order")
+        return parser.get_stroke_order()
 
     @staticmethod
-    async def fetch_wubi(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+    async def fetch_wubi(character: str, mode: str = "s", timeout: int = 5) -> int | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("wubi")
+        return parser.get_wubi()
 
     @staticmethod
     async def fetch_cangjie(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("cangjie")
+        return parser.get_cangjie()
 
     @staticmethod
     async def fetch_zhengma(character: str, mode: str = "s", timeout: int = 5) -> str | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("zhengma")
+        return parser.get_zhengma()
 
     @staticmethod
-    async def fetch_fcorners(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+    async def fetch_fcorners(character: str, mode: str = "s", timeout: int = 5) -> int | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.character_info.get("fcorners")
+        return parser.get_fcorners()
 
     @staticmethod
-    async def fetch_simple_defs(character: str, mode: str = "s", timeout: int = 5) -> str | None:
+    async def fetch_simple_defs(character: str, mode: str = "s", timeout: int = 5) -> dict[str, list[str]] | None:
         parser = ZDicCharacterParser()
         await parser.search_async(character, mode, timeout)
-        return parser.definitions.get("simple_defs")
+        return parser.get_simple_defs()
 
     # GETTERS
     def get_img_src(self) -> str | None:
