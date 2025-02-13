@@ -1,8 +1,8 @@
 import bs4
 from bs4 import BeautifulSoup
 
-from src.types.types import CharacterInfo, Definitions, ParsedSections
-from src.exceptions.exceptions import ElementIsMissingException
+from .types.types import CharacterInfo, Definitions, ParsedSections
+from zdic_parser.exceptions import ElementIsMissingException
 
 # Key map
 keys: dict[str, str] = {
@@ -65,8 +65,8 @@ def parse_character_info_section(info_card: bs4.element.Tag) -> CharacterInfo:
 
     # Extract image source
     img_tag: bs4.element.Tag | None = info_card.select_one("td.ziif_d_l img")
-    if img_tag and img_tag.get("src"):
-        parsed_info["img_src"] = img_tag["src"]
+    if img_tag and img_tag.get("zdic_parser"):
+        parsed_info["img_src"] = img_tag["zdic_parser"]
 
     # Extract character data
     character_info_tables: list[bs4.element.Tag] = info_card.select("td:not(.ziif_d_l) table table")

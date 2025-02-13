@@ -19,12 +19,12 @@ from test_data import (
     ZdicScraper_get_fcorners_data,
     ZdicScraper_get_simple_defs_data,
 )
-from src.types.types import (
+from zdic_parser.types.types import (
     CharacterInfo,
     Definitions,
     ParsedSections,
 )
-from src.scraper import (
+from zdic_parser.scraper import (
     ZDicCharacterParser,
 )
 

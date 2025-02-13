@@ -1,12 +1,12 @@
 import httpx
 
 from .parser import parse_html
-from src.types.types import CharacterInfo, Definitions, ParsedSections
+from .types.types import CharacterInfo, Definitions, ParsedSections
 
 
 class ZDicCharacterParser:
     """
-    A utility class for storing and retrieving data scraped from ZDic.
+    A utility class for scraping and retrieving data from ZDic.
 
     Attributes:
         character_info (dict): A dictionary containing various details about a Chinese character.
@@ -33,8 +33,23 @@ class ZDicCharacterParser:
             - simple_defs (dict): Basic definitions of the character.
 
     Methods:
+        search(character: str, mode: str = "s", timeout: int = 5) -> None:
+            Performs a synchronous search for a given Chinese character.
+
+        search_async(character: str, mode: str = "s", timeout: int = 5) -> None:
+            Performs an asynchronous search for a given Chinese character.
+
+        Various static getter methods for retrieving specific data fields, without the need for instantiation,
+        following the naming pattern:
+            - fetch_<field_name>(), e.g., fetch_img_src(), fetch_pinyin().
+
         Various getter methods for retrieving specific data fields, following the naming pattern:
             - get_<field_name>(), e.g., get_pinyin(), get_homophones(), get_simple_defs().
+
+    Example:
+        >>> scraper = ZDicCharacterParser()
+        >>> scraper.search("你")
+        >>> print(scraper.get_pinyin())
     """
     BASE_URL = "https://www.zdic.net/han{mode}/{character}"
 

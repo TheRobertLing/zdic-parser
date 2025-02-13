@@ -13,12 +13,12 @@ from test_data import (
     fetch_definitions_section_data_2,
 )
 
-from src.types.types import (
+from zdic_parser.types.types import (
     CharacterInfo,
     Definitions,
     ParsedSections,
 )
-from src.parser import (
+from zdic_parser.parser import (
     parse_html,
     parse_character_info_section,
     parse_definitions_section,
