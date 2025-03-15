@@ -86,7 +86,7 @@ def parse_character_info_section(info_card: bs4.element.Tag) -> CharacterInfo:
             title:str = title_td.get_text(strip=True)
             classes: list[str] = value_td.get("class", [])
 
-            if "z_bs2" in classes or "z_jfz" in classes:
+            if any(cls.startswith("z_bs") for cls in classes) or any(cls.startswith("z_jfz") for cls in classes):
                 # Handle cases where multiple title-value pairs exist inside <p> elements
                 for p in value_td.find_all("p", recursive=False):
                     span: bs4.element.Tag = p.find("span")
